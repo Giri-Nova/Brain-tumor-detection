@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeuroScan AI | Intelligent Brain Tumor Radiomics Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+</head>
+<body>
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Header Nav -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon-wrapper">
+        <span class="brand-icon">🧠</span>
+        <div class="pulse-ring"></div>
+      </div>
+      <div>
+        <div class="brand-title">NEURO<span class="gradient-text">SCAN</span> <span class="badge-version">AI 2.0</span></div>
+        <div class="brand-tagline">Deep Learning Convolutional Radiomics & Grad-CAM Localization</div>
+      </div>
+    </div>
+
+    <div class="nav-metrics">
+      <div class="metric-pill">
+        <span class="status-dot active"></span>
+        <span class="metric-label">Model:</span>
+        <span class="metric-val" id="nav-model-name">CNN (brain_tumor_cnn_final.keras)</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-label">Explainability:</span>
+        <span class="metric-val text-cyan">Grad-CAM (conv2d_3)</span>
+      </div>
+      <button class="sound-toggle-btn" id="sound-btn" title="Toggle Audio Feedback">
+        <span id="sound-icon">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-grid">
+
+    <!-- Left Column: Image Workstation -->
+    <section class="panel workstation-panel">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <div class="indicator-beacon"></div>
+          <h2>MRI Diagnostic Workstation</h2>
+        </div>
+        <div class="workstation-tools">
+          <label class="toggle-control" title="Toggle Raw Keras Model vs Clinically Calibrated Mode">
+            <input type="checkbox" id="mode-toggle" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Smart Diagnostics</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Viewport Display Container -->
+      <div class="viewport-wrapper" id="drop-zone">
+        <!-- Overlay HUD lines -->
+        <div class="hud-corner top-left"></div>
+        <div class="hud-corner top-right"></div>
+        <div class="hud-corner bottom-left"></div>
+        <div class="hud-corner bottom-right"></div>
+        <div class="hud-grid-overlay"></div>
+
+        <!-- Laser Scanning Hologram Effect (Active during inference) -->
+        <div class="laser-scanner" id="laser-scanner">
+          <div class="laser-line"></div>
+          <div class="laser-radar-sweep"></div>
+          <div class="scan-grid-lines"></div>
+          <div class="scanning-telemetry">
+            <div class="telemetry-item"><span class="pulse-icon">●</span> <span id="telemetry-step">ACQUIRING MRI SLICE</span></div>
+            <div class="telemetry-item font-mono text-cyan" id="telemetry-sub">NORMALIZING VOXEL VALUES...</div>
+            <div class="telemetry-bar"><div class="telemetry-bar-fill" id="telemetry-progress"></div></div>
+          </div>
+        </div>
+
+        <!-- Main MRI Image Container with Split Slider -->
+        <div class="image-viewer-container" id="viewer-container">
+          <!-- Empty State Prompt -->
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon-orbit">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 8v8M8 12h8"></path>
+              </svg>
+            </div>
+            <h3>Drop Brain MRI Scan Here</h3>
+            <p>Upload DICOM / PNG / JPG or select a pre-loaded sample below</p>
+            <button class="btn btn-primary" id="browse-btn">
+              <span>Browse Image File</span>
+            </button>
+            <input type="file" id="file-input" accept="image/png, image/jpeg, image/jpg, image/webp" style="display: none;">
+          </div>
+
+          <!-- Active MRI Viewer Display -->
+          <div class="mri-stage hidden" id="mri-stage">
+            <!-- Base MRI Image -->
+            <img id="base-mri-img" src="" alt="MRI Brain Scan" class="stage-img">
+
+            <!-- Split View: Grad-CAM Overlay with Clip-path -->
+            <div class="split-overlay-container" id="split-overlay-container">
+              <img id="heatmap-overlay-img" src="" alt="Grad-CAM Tumor Heatmap" class="stage-img">
+            </div>
+
+            <!-- Bounding Box Annotation -->
+            <div class="roi-bbox hidden" id="roi-bbox">
+              <div class="bbox-label">
+                <span class="bbox-tag" id="bbox-tag">TUMOR ROI</span>
+                <span class="bbox-area" id="bbox-area">5.2%</span>
+              </div>
+              <div class="bbox-crosshair"></div>
+            </div>
+
+            <!-- Split Screen Divider Handle -->
+            <div class="split-slider-divider" id="split-slider-divider">
+              <div class="divider-line"></div>
+              <div class="divider-handle">
+                <span>◀ ▶</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Viewport Bottom Controls Toolbar -->
+        <div class="viewport-toolbar">
+          <div class="tool-group">
+            <span class="tool-label">Heatmap Opacity:</span>
+            <input type="range" id="opacity-slider" min="0" max="100" value="70" class="custom-slider">
+            <span class="slider-val" id="opacity-val">70%</span>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-label">Colormap:</span>
+            <select id="colormap-select" class="custom-select">
+              <option value="jet">Jet (Thermal Rainbow)</option>
+              <option value="turbo">Turbo (High-Contrast)</option>
+              <option value="inferno">Inferno (Radiation Glow)</option>
+              <option value="plasma">Plasma (Deep Neon)</option>
+              <option value="viridis">Viridis (Clinical Standard)</option>
+            </select>
+          </div>
+
+          <div class="tool-group toggles">
+            <button class="chip-btn active" id="btn-toggle-split" title="Toggle Split-Screen Compare Mode">
+              Split Compare
+            </button>
+            <button class="chip-btn active" id="btn-toggle-bbox" title="Toggle Tumor Bounding Box Outline">
+              ROI Box
+            </button>
+            <button class="chip-btn" id="btn-toggle-contrast" title="Enhance MRI Window/Level Contrast">
+              Auto-Contrast
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick-Load Sample MRI Gallery -->
+      <div class="sample-gallery-section">
+        <div class="section-title-row">
+          <span class="section-badge">ONE-CLICK CLINICAL TEST CASES</span>
+          <span class="section-hint">Select a patient case to run automatic neural diagnostics</span>
+        </div>
+        <div class="sample-cards-grid" id="sample-cards-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Diagnostic Intelligence & Clinical Findings -->
+    <section class="panel diagnostic-panel">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <div class="indicator-beacon beacon-cyan"></div>
+          <h2>Neural Diagnostic Findings</h2>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline btn-sm" id="btn-export-report" disabled>
+            <span>📄 Export Clinical Report</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="findings-scrollable">
+        <!-- Primary Diagnosis Banner -->
+        <div class="diagnosis-banner" id="diagnosis-banner">
+          <div class="banner-glow" id="banner-glow"></div>
+          <div class="banner-content">
+            <div class="banner-top">
+              <span class="eyebrow" id="diagnosis-category">PATHOLOGY CLASSIFICATION</span>
+              <span class="severity-badge normal" id="severity-badge">AWAITING SCAN</span>
+            </div>
+            <div class="banner-main">
+              <h1 class="predicted-class-title" id="predicted-class-title">No Scan Loaded</h1>
+              <div class="confidence-display">
+                <div class="confidence-circle" id="confidence-circle">
+                  <svg viewBox="0 0 100 100" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="circle" id="confidence-circle-bar" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="circle-text">
+                    <span class="circle-percent" id="confidence-percent">0%</span>
+                    <span class="circle-label">CONFIDENCE</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="banner-footer" id="banner-footer">
+              <span id="detection-status-text">Select a sample scan or upload an image to analyze.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Class Probabilities Breakdown -->
+        <div class="card card-probabilities">
+          <div class="card-header">
+            <h3>Multiclass Probability Spectrum</h3>
+            <span class="pill-info">Softmax Distribution</span>
+          </div>
+          <div class="card-body">
+            <div class="probability-bars-list" id="probability-bars-list">
+              <!-- Populated via JS -->
+              <div class="prob-row" data-class="Glioma">
+                <div class="prob-meta">
+                  <span class="class-name">Glioma</span>
+                  <span class="class-pct">0.0%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div>
+              </div>
+              <div class="prob-row" data-class="Meningioma">
+                <div class="prob-meta">
+                  <span class="class-name">Meningioma</span>
+                  <span class="class-pct">0.0%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div>
+              </div>
+              <div class="prob-row" data-class="Pituitary">
+                <div class="prob-meta">
+                  <span class="class-name">Pituitary</span>
+                  <span class="class-pct">0.0%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div>
+              </div>
+              <div class="prob-row" data-class="No Tumor">
+                <div class="prob-meta">
+                  <span class="class-name">No Tumor (Healthy)</span>
+                  <span class="class-pct">0.0%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spatial Localization & Lesion Metrics -->
+        <div class="card card-metrics">
+          <div class="card-header">
+            <h3>Grad-CAM Spatial Metrics</h3>
+            <span class="pill-info font-mono">conv2d_3</span>
+          </div>
+          <div class="card-body">
+            <div class="metric-tiles-grid">
+              <div class="metric-tile">
+                <span class="tile-icon">🎯</span>
+                <div class="tile-content">
+                  <span class="tile-label">Hotspot Centroid</span>
+                  <span class="tile-value" id="val-centroid">N/A</span>
+                </div>
+              </div>
+              <div class="metric-tile">
+                <span class="tile-icon">📐</span>
+                <div class="tile-content">
+                  <span class="tile-label">Lesion Footprint</span>
+                  <span class="tile-value" id="val-area">N/A</span>
+                </div>
+              </div>
+              <div class="metric-tile">
+                <span class="tile-icon">⚡</span>
+                <div class="tile-content">
+                  <span class="tile-label">Inference Latency</span>
+                  <span class="tile-value text-cyan" id="val-latency">0 ms</span>
+                </div>
+              </div>
+              <div class="metric-tile">
+                <span class="tile-icon">📍</span>
+                <div class="tile-content">
+                  <span class="tile-label">Anatomical Region</span>
+                  <span class="tile-value" id="val-location">N/A</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clinical Pathology & Follow-Up Protocol -->
+        <div class="card card-recommendations">
+          <div class="card-header">
+            <h3>Radiological Guidance & Recommendations</h3>
+            <span class="badge-clinical" id="badge-urgency">ROUTINE</span>
+          </div>
+          <div class="card-body">
+            <div class="clinical-block">
+              <span class="block-label">PATHOLOGICAL ASSESSMENT:</span>
+              <p class="block-text" id="clinical-notes">Awaiting brain MRI scan upload to formulate diagnostic assessment.</p>
+            </div>
+            <div class="clinical-block">
+              <span class="block-label">NEXT CLINICAL STEPS:</span>
+              <p class="block-text text-accent" id="clinical-followup">Select or upload a scan.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Patient Demographics & Metadata Bar -->
+        <div class="card card-patient">
+          <div class="card-header">
+            <h3>Active Case Subject</h3>
+            <span class="text-muted" id="patient-mrn">MRN: ---</span>
+          </div>
+          <div class="card-body">
+            <div class="patient-details-grid">
+              <div><span class="label">Patient:</span> <span class="val" id="patient-name">---</span></div>
+              <div><span class="label">Age/Sex:</span> <span class="val" id="patient-age-sex">---</span></div>
+              <div><span class="label">Scan Protocol:</span> <span class="val" id="patient-scan-type">---</span></div>
+              <div><span class="label">Study Date:</span> <span class="val" id="patient-date">---</span></div>
+            </div>
+            <div class="patient-history-box" id="patient-history">
+              No active patient case loaded.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Printable Clinical Report Modal -->
+  <div class="modal-backdrop hidden" id="report-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="icon">📋</span>
+          <h2>Clinical Diagnostic Radiomics Report</h2>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-sm" id="btn-print-report">🖨️ Print / Save as PDF</button>
+          <button class="btn btn-outline btn-sm" id="btn-close-modal">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="modal-body printable-content" id="printable-report">
+        <div class="report-header">
+          <div class="hospital-brand">
+            <h2>NEUROSCAN ADVANCED IMAGING CENTER</h2>
+            <p>Department of Diagnostic Neuroradiology & AI Radiomics</p>
+          </div>
+          <div class="report-meta">
+            <div><strong>Report ID:</strong> <span id="rep-id">REP-2026-9921</span></div>
+            <div><strong>Generated:</strong> <span id="rep-date">2026-10-14</span></div>
+          </div>
+        </div>
+
+        <div class="report-patient-box">
+          <div class="rep-grid">
+            <div><span class="rep-lbl">Patient Name:</span> <span id="rep-patient-name">David Vance</span></div>
+            <div><span class="rep-lbl">MRN:</span> <span id="rep-mrn">MRN-884192</span></div>
+            <div><span class="rep-lbl">Age / Gender:</span> <span id="rep-age-sex">56 / Male</span></div>
+            <div><span class="rep-lbl">Study Modality:</span> <span id="rep-modality">Axial Brain MRI</span></div>
+          </div>
+        </div>
+
+        <div class="report-images-row">
+          <div class="rep-img-card">
+            <h4>Original Axial MRI Scan</h4>
+            <img id="rep-orig-img" src="" alt="Original MRI">
+          </div>
+          <div class="rep-img-card">
+            <h4>Grad-CAM Activation Heatmap</h4>
+            <img id="rep-cam-img" src="" alt="Grad-CAM Overlay">
+          </div>
+        </div>
+
+        <div class="report-findings-box">
+          <h3>AI NEURORADIOLOGY FINDINGS</h3>
+          <table class="rep-table">
+            <tr>
+              <td><strong>Primary Finding:</strong></td>
+              <td id="rep-primary-finding" class="rep-highlight">Glioma (Glioblastoma)</td>
+              <td><strong>Confidence Score:</strong></td>
+              <td id="rep-confidence" class="rep-highlight">97.8%</td>
+            </tr>
+            <tr>
+              <td><strong>Pathology Category:</strong></td>
+              <td id="rep-category">Intra-axial Glial Neoplasm</td>
+              <td><strong>Risk Urgency:</strong></td>
+              <td id="rep-urgency">Immediate Neurosurgical Consultation</td>
+            </tr>
+            <tr>
+              <td><strong>Lesion Location:</strong></td>
+              <td id="rep-location">Cerebral white matter</td>
+              <td><strong>Lesion Footprint:</strong></td>
+              <td id="rep-footprint">6.82% of intracranial volume</td>
+            </tr>
+          </table>
+
+          <div class="rep-narrative">
+            <h4>Clinical Assessment & Diagnostic Impression</h4>
+            <p id="rep-notes">Deep learning convolutional model detected focal hyperintensity consistent with an intra-axial glial mass.</p>
+          </div>
+
+          <div class="rep-recommendations">
+            <h4>Recommended Management Plan</h4>
+            <p id="rep-recs">Stereotactic biopsy and neuro-oncology evaluation advised.</p>
+          </div>
+        </div>
+
+        <div class="report-signoff">
+          <div class="signoff-col">
+            <div class="sign-line"></div>
+            <p><strong>Radiology AI Diagnostic Assistant</strong><br>TensorFlow CNN (brain_tumor_cnn_final.keras)</p>
+          </div>
+          <div class="signoff-col">
+            <div class="sign-line"></div>
+            <p><strong>Attending Neuroradiologist</strong><br>MD, Board Certified Neuroradiology</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
